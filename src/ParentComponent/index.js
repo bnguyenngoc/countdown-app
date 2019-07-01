@@ -28,7 +28,8 @@ export default class ParentComponent extends Component {
       number: "",
       icon: "",
       date: ""
-    }
+    },
+    modalOpen: false
   };
 
   handleSubmit = () => {
@@ -39,13 +40,16 @@ export default class ParentComponent extends Component {
     let joined = components;
     for (let i = 0; i < number; i++) {
       joined.push({
-        name: `${name}#${i + 1}`,
+        name: `${name}#${joined.length + 1}`,
         id: joined.length + 1,
         date: Date.now(),
         icon: icon || "computer"
       });
     }
-    this.setState({ components: joined, form: { name: "", number: "" } });
+    this.setState({
+      components: joined,
+      form: { name: "", number: "", icon: "" }
+    });
     toast.success("Create Components Successfully");
   };
 
@@ -55,9 +59,10 @@ export default class ParentComponent extends Component {
     let index = components.findIndex(component => {
       return component.id === editForm.id;
     });
-    this.setState({
-      components: { ...components, [this.state.components[index]]: editForm }
+    let newComponents = update(components, {
+      $splice: [[index, 1, editForm]]
     });
+    this.setState({ components: newComponents, modalOpen: false });
   };
 
   handleChange = (e, { name, value }) => {
@@ -112,20 +117,22 @@ export default class ParentComponent extends Component {
         number: component.number,
         icon: component.icon,
         date: component.date
-      }
+      },
+      modalOpen: true
     });
   }
 
   renderModal(component) {
-    const { editForm } = this.state;
+    const { editForm, modalOpen } = this.state;
     return (
       <Modal
         trigger={<a onClick={() => this.handleEditForm(component)}>(Edit)</a>}
         basic
+        open={modalOpen}
       >
         <Header icon="pencil" content="Edit" />
         <Modal.Content>
-          <Form inverted>
+          <Form inverted onSubmit={this.handleEditSubmit}>
             <Form.Group>
               <Form.Input
                 label="Name"
@@ -142,16 +149,23 @@ export default class ParentComponent extends Component {
                 onChange={this.handleEditChange}
               />
             </Form.Group>
+            <Button.Group>
+              <Button color="green" inverted>
+                <Icon name="checkmark" /> Submit
+              </Button>
+              <Button.Or />
+              <Button
+                type="submit"
+                basic
+                color="red"
+                inverted
+                onClick={this.handleEditSubmit}
+              >
+                <Icon name="remove" /> Cancel
+              </Button>
+            </Button.Group>
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button color="green" inverted>
-            <Icon name="checkmark" /> Submit
-          </Button>
-          <Button basic color="red" inverted onClick={this.handleEditSubmit}>
-            <Icon name="remove" /> Cancel
-          </Button>
-        </Modal.Actions>
       </Modal>
     );
   }
@@ -199,6 +213,7 @@ export default class ParentComponent extends Component {
                 name="name"
                 value={form.name}
                 onChange={this.handleChange}
+                type="text"
               />
               <Form.Input
                 label="Number"
@@ -210,10 +225,11 @@ export default class ParentComponent extends Component {
               />
               <Form.Input
                 label="Icon"
-                placeholder="Enter a Font Awesome Icon"
+                placeholder="Leave Blank for Default"
                 name="icon"
                 value={form.icon}
                 onChange={this.handleChange}
+                type="text"
               />
             </Form.Group>
             <Button primary> Enter Component</Button>
