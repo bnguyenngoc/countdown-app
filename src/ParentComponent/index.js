@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import {
   Container,
   Divider,
@@ -14,29 +14,25 @@ import { toast } from "react-toastify";
 import Countdown from "react-countdown-now";
 import update from "immutability-helper";
 
-export default class ParentComponent extends Component {
-  state = {
-    components: [],
-    form: {
-      name: "",
-      number: "",
-      icon: ""
-    },
-    editForm: {
-      id: "",
-      name: "",
-      number: "",
-      icon: "",
-      date: ""
-    },
-    modalOpen: false
-  };
+const ParentComponent = () => {
 
-  handleSubmit = () => {
-    const {
-      form: { name, number, icon },
-      components
-    } = this.state;
+  const [components, setComponents] = useState([]);
+  const [form, setForm] = useState({
+    name: "",
+    number: "",
+    icon: ""
+  });
+  const [editForm, setEditForm] = useState({
+    id: "",
+    name: "",
+    number: "",
+    icon: "",
+    date: ""
+  });
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleSubmit = () => {
+    const { name, number, icon } = form;
     let joined = components;
     for (let i = 0; i < number; i++) {
       joined.push({
@@ -46,45 +42,32 @@ export default class ParentComponent extends Component {
         icon: icon || "computer"
       });
     }
-    this.setState({
-      components: joined,
-      form: { name: "", number: "", icon: "" }
-    });
+
+    setComponents(joined);
+    setForm({ name: "", number: "", icon: "" })
     toast.success("Create Components Successfully");
   };
 
-  handleEditSubmit = () => {
-    const { editForm } = this.state;
-    const { components } = this.state;
+  const handleEditSubmit = () => {
     let index = components.findIndex(component => {
       return component.id === editForm.id;
     });
     let newComponents = update(components, {
       $splice: [[index, 1, editForm]]
     });
-    this.setState({ components: newComponents, modalOpen: false });
+    setComponents(newComponents);
+    setModalOpen(false);
   };
 
-  handleChange = (e, { name, value }) => {
-    this.setState({
-      form: {
-        ...this.state.form,
-        [name]: value
-      }
-    });
+  const handleChange = (e, { name, value }) => {
+    setForm({ ...form, [name]: value });
   };
 
-  handleEditChange = (e, { name, value }) => {
-    this.setState({
-      editForm: {
-        ...this.state.editForm,
-        [name]: value
-      }
-    });
+  const handleEditChange = (e, { name, value }) => {
+    setEditForm({ ...editForm, [name]: value });
   };
 
-  resetCountdown = id => {
-    const { components } = this.state;
+  const resetCountdown = id => {
     let index = components.findIndex(component => {
       return component.id === id;
     });
@@ -94,10 +77,10 @@ export default class ParentComponent extends Component {
     let newComponents = update(components, {
       $splice: [[index, 1, updatedComponent]]
     });
-    this.setState({ components: newComponents });
+    setComponents(newComponents);
   };
 
-  timesUp = ({ hours, minutes, seconds, completed }) => {
+  const timesUp = ({ hours, minutes, seconds, completed }) => {
     if (completed) {
       return <span style={{ color: "red" }}>Kick 'Em Out!</span>;
     } else {
@@ -109,44 +92,41 @@ export default class ParentComponent extends Component {
     }
   };
 
-  handleEditForm(component) {
-    this.setState({
-      editForm: {
-        id: component.id,
-        name: component.name,
-        number: component.number,
-        icon: component.icon,
-        date: component.date
-      },
-      modalOpen: true
+  const handleEditForm = component => {
+    setEditForm({
+      id: component.id,
+      name: component.name,
+      number: component.number,
+      icon: component.icon,
+      date: component.date
     });
+    setModalOpen(true);
   }
 
-  renderModal(component) {
-    const { editForm, modalOpen } = this.state;
+  const renderModal = component => {
     return (
       <Modal
-        trigger={<a onClick={() => this.handleEditForm(component)}>(Edit)</a>}
+        trigger={<a onClick={() => handleEditForm(component)}>(Edit)</a>}
         basic
         open={modalOpen}
       >
         <Header icon="pencil" content="Edit" />
         <Modal.Content>
-          <Form inverted onSubmit={this.handleEditSubmit}>
+          <Form inverted onSubmit={handleEditSubmit}>
             <Form.Group>
               <Form.Input
                 label="Name"
                 placeholder="Enter Component Name"
                 name="name"
                 value={editForm.name}
-                onChange={this.handleEditChange}
+                onChange={handleEditChange}
               />
               <Form.Input
                 label="Icon"
                 placeholder="Enter a Font Awesome Icon"
                 name="icon"
                 value={editForm.icon}
-                onChange={this.handleEditChange}
+                onChange={handleEditChange}
               />
             </Form.Group>
             <Button.Group>
@@ -159,7 +139,7 @@ export default class ParentComponent extends Component {
                 basic
                 color="red"
                 inverted
-                onClick={this.handleEditSubmit}
+                onClick={handleEditSubmit}
               >
                 <Icon name="remove" /> Cancel
               </Button>
@@ -169,8 +149,7 @@ export default class ParentComponent extends Component {
       </Modal>
     );
   }
-  renderList = () => {
-    const { components } = this.state;
+  const renderList = () => {
     if (components.length === 0) {
       return <Header as="h2">No Components yet. Render some!</Header>;
     } else {
@@ -180,12 +159,12 @@ export default class ParentComponent extends Component {
             <List.Icon name={component.icon} />
             <List.Content>
               <List.Header>
-                {component.name} {this.renderModal(component)}
+                {component.name} {renderModal(component)}
               </List.Header>
               <List.Description>
-                <Countdown date={component.date} renderer={this.timesUp} />
+                <Countdown date={component.date} renderer={timesUp} />
                 &nbsp;
-                <a onClick={() => this.resetCountdown(component.id)}>
+                <a onClick={() => resetCountdown(component.id)}>
                   Reset Timer
                 </a>
               </List.Description>
@@ -196,47 +175,46 @@ export default class ParentComponent extends Component {
     }
   };
 
-  render() {
-    const { form } = this.state;
-    return (
-      <Segment raised>
-        <Divider horizontal>
-          <Header as="h1">Countdown App</Header>
-        </Divider>
-        <Container>
-          <Header as="h3">Setup Components</Header>
-          <Form onSubmit={this.handleSubmit}>
-            <Form.Group>
-              <Form.Input
-                label="Name"
-                placeholder="Enter Component Name"
-                name="name"
-                value={form.name}
-                onChange={this.handleChange}
-                type="text"
-              />
-              <Form.Input
-                label="Number"
-                placeholder="Enter number of component"
-                type="number"
-                name="number"
-                value={form.number}
-                onChange={this.handleChange}
-              />
-              <Form.Input
-                label="Icon"
-                placeholder="Leave Blank for Default"
-                name="icon"
-                value={form.icon}
-                onChange={this.handleChange}
-                type="text"
-              />
-            </Form.Group>
-            <Button primary> Enter Component</Button>
-          </Form>
-        </Container>
-        <List size="big">{this.renderList()}</List>
-      </Segment>
-    );
-  }
+  return (
+    <Segment raised>
+      <Divider horizontal>
+        <Header as="h1">Countdown App</Header>
+      </Divider>
+      <Container>
+        <Header as="h3">Setup Components</Header>
+        <Form onSubmit={handleSubmit}>
+          <Form.Group>
+            <Form.Input
+              label="Name"
+              placeholder="Enter Component Name"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              type="text"
+            />
+            <Form.Input
+              label="Number"
+              placeholder="Enter number of component"
+              type="number"
+              name="number"
+              value={form.number}
+              onChange={handleChange}
+            />
+            <Form.Input
+              label="Icon"
+              placeholder="Leave Blank for Default"
+              name="icon"
+              value={form.icon}
+              onChange={handleChange}
+              type="text"
+            />
+          </Form.Group>
+          <Button primary> Enter Component</Button>
+        </Form>
+      </Container>
+      <List size="big">{renderList()}</List>
+    </Segment>
+  );
 }
+
+export default ParentComponent;
