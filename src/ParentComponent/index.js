@@ -8,15 +8,16 @@ import {
   Form,
   List,
   Modal,
-  Icon
+  Icon,
+  Grid
 } from "semantic-ui-react";
 import { toast } from "react-toastify";
 import Countdown from "react-countdown-now";
 import update from "immutability-helper";
 
 const ParentComponent = () => {
-
-  const [components, setComponents] = useState([]);
+  const [components, setComponents] = useState({});
+  const [names, setNames] = useState([]);
   const [form, setForm] = useState({
     name: "",
     number: "",
@@ -33,29 +34,26 @@ const ParentComponent = () => {
 
   const handleSubmit = () => {
     const { name, number, icon } = form;
+    let newNames = names;
+    newNames.push(name);
     let joined = components;
     for (let i = 0; i < number; i++) {
-      joined.push({
-        name: `${name}#${joined.length + 1}`,
-        id: joined.length + 1,
+      joined[Object.keys(joined).length + 1] = {
+        name: `${name}#${Object.keys(joined).length + 1}`,
+        id: Object.keys(joined).length + 1,
         date: Date.now(),
         icon: icon || "computer"
-      });
+      };
     }
 
     setComponents(joined);
-    setForm({ name: "", number: "", icon: "" })
+    setForm({ name: "", number: "", icon: "" });
+    setNames(newNames);
     toast.success("Create Components Successfully");
   };
 
   const handleEditSubmit = () => {
-    let index = components.findIndex(component => {
-      return component.id === editForm.id;
-    });
-    let newComponents = update(components, {
-      $splice: [[index, 1, editForm]]
-    });
-    setComponents(newComponents);
+    setComponents({ ...components, [editForm.id]: editForm });
     setModalOpen(false);
   };
 
@@ -68,16 +66,10 @@ const ParentComponent = () => {
   };
 
   const resetCountdown = id => {
-    let index = components.findIndex(component => {
-      return component.id === id;
+    setComponents({
+      ...components,
+      [id]: { ...components[id], date: Date.now() + 3600000 }
     });
-    let updatedComponent = update(components[index], {
-      date: { $set: Date.now() + 3600000 }
-    });
-    let newComponents = update(components, {
-      $splice: [[index, 1, updatedComponent]]
-    });
-    setComponents(newComponents);
   };
 
   const timesUp = ({ hours, minutes, seconds, completed }) => {
@@ -101,7 +93,7 @@ const ParentComponent = () => {
       date: component.date
     });
     setModalOpen(true);
-  }
+  };
 
   const renderModal = component => {
     return (
@@ -148,23 +140,24 @@ const ParentComponent = () => {
         </Modal.Content>
       </Modal>
     );
-  }
-  const renderList = () => {
-    if (components.length === 0) {
-      return <Header as="h2">No Components yet. Render some!</Header>;
-    } else {
-      return components.map(component => {
+  };
+  const renderList = name => {
+    let listItems = Object.keys(components)
+      .filter(key => {
+        return components[key]["name"].includes(name);
+      })
+      .map(key => {
         return (
-          <List.Item key={component.id}>
-            <List.Icon name={component.icon} />
+          <List.Item key={components[key].id}>
+            <List.Icon name={components[key].icon} />
             <List.Content>
               <List.Header>
-                {component.name} {renderModal(component)}
+                {components[key].name} {renderModal(components[key])}
               </List.Header>
               <List.Description>
-                <Countdown date={component.date} renderer={timesUp} />
+                <Countdown date={components[key].date} renderer={timesUp} />
                 &nbsp;
-                <a onClick={() => resetCountdown(component.id)}>
+                <a onClick={() => resetCountdown(components[key].id)}>
                   Reset Timer
                 </a>
               </List.Description>
@@ -172,7 +165,14 @@ const ParentComponent = () => {
           </List.Item>
         );
       });
-    }
+    return <List>{listItems}</List>;
+  };
+
+  const renderGrid = () => {
+    console.log(names);
+    return names.map(name => {
+      return <Grid.Column key={name}>{renderList(name)}</Grid.Column>;
+    });
   };
 
   return (
@@ -212,9 +212,11 @@ const ParentComponent = () => {
           <Button primary> Enter Component</Button>
         </Form>
       </Container>
-      <List size="big">{renderList()}</List>
+      <Grid columns={names.length} divided>
+        {renderGrid()}
+      </Grid>
     </Segment>
   );
-}
+};
 
 export default ParentComponent;
