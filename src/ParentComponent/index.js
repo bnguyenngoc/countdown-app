@@ -72,6 +72,13 @@ const ParentComponent = () => {
     });
   };
 
+  const clearCountdown = id => {
+    setComponents({
+      ...components,
+      [id]: { ...components[id], date: Date.now() }
+    });
+  };
+
   const timesUp = ({ hours, minutes, seconds, completed }) => {
     if (completed) {
       return <span style={{ color: "red" }}>Kick 'Em Out!</span>;
@@ -160,6 +167,45 @@ const ParentComponent = () => {
                 <a onClick={() => resetCountdown(components[key].id)}>
                   Reset Timer
                 </a>
+                &nbsp; | &nbsp;
+                <a onClick={() => clearCountdown(components[key].id)}>
+                  Clear Timer
+                </a>
+              </List.Description>
+            </List.Content>
+          </List.Item>
+        );
+      });
+    return <List>{listItems}</List>;
+  };
+
+  const renderFinalList = () => {
+    let listItems = Object.keys(components)
+      .filter(key => {
+        let isInNames = true;
+        names.forEach(name => {
+          isInNames = components[key]["name"].includes(name);
+        });
+        return !isInNames;
+      })
+      .map(key => {
+        return (
+          <List.Item key={components[key].id}>
+            <List.Icon name={components[key].icon} />
+            <List.Content>
+              <List.Header>
+                {components[key].name} {renderModal(components[key])}
+              </List.Header>
+              <List.Description>
+                <Countdown date={components[key].date} renderer={timesUp} />
+                &nbsp;
+                <a onClick={() => resetCountdown(components[key].id)}>
+                  Reset Timer
+                </a>
+                &nbsp; | &nbsp;
+                <a onClick={() => clearCountdown(components[key].id)}>
+                  Clear Timer
+                </a>
               </List.Description>
             </List.Content>
           </List.Item>
@@ -169,7 +215,6 @@ const ParentComponent = () => {
   };
 
   const renderGrid = () => {
-    console.log(names);
     return names.map(name => {
       return <Grid.Column key={name}>{renderList(name)}</Grid.Column>;
     });
@@ -212,8 +257,9 @@ const ParentComponent = () => {
           <Button primary> Enter Component</Button>
         </Form>
       </Container>
-      <Grid columns={names.length} divided>
+      <Grid columns={names.length + 1} divided>
         {renderGrid()}
+        <Grid.Column>{renderFinalList()}</Grid.Column>
       </Grid>
     </Segment>
   );
